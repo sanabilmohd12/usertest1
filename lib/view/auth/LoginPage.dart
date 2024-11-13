@@ -29,7 +29,7 @@ class LoginPage extends StatelessWidget {
                 child: Align(
                   alignment: Alignment.topCenter,
                   child: Image(
-                    image: AssetImage('assets/loginimage.png'),
+                    image: AssetImage('assets/login.png'),
                     width: width / 2,
                     height: height / 5,
                     fit: BoxFit.contain,

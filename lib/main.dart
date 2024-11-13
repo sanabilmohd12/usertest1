@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:testcase1/view/auth/LoginPage.dart';
+import 'package:testcase1/view/auth/OTPpage.dart';
 
 void main() {
   runApp(const MyApp());
@@ -18,7 +19,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: LoginPage(),
+      home: OtpPage(),
     );
   }
 }

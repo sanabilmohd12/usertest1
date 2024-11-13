@@ -12,3 +12,4 @@ class AppColors {
   static const Color buttonblack = Color(0xFF100E09);
   static const Color bggrey = Color(0xFFEBEBEB);
 }
+
