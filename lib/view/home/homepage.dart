@@ -17,7 +17,7 @@ class HomePage extends StatelessWidget {
     final screenwidth = MediaQuery.of(context).size.width;
 
     MainProvider mainprovider =
-    Provider.of<MainProvider>(context, listen: false);
+        Provider.of<MainProvider>(context, listen: false);
 
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       mainprovider.fetchUsers();
@@ -25,22 +25,21 @@ class HomePage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.bggrey,
-      floatingActionButton: Consumer<MainProvider>(
-        builder: (context,pro,child) {
-          return FloatingActionButton(
-            shape: CircleBorder(),
-            onPressed: () {
-              _AddUserPopup(context);
-              pro.cleartextfield();
-            },
-            child: Icon(
-              CupertinoIcons.plus,
-              color: AppColors.white,
-            ),
-            backgroundColor: AppColors.buttonblack,
-          );
-        }
-      ),
+      floatingActionButton:
+          Consumer<MainProvider>(builder: (context, pro, child) {
+        return FloatingActionButton(
+          shape: CircleBorder(),
+          onPressed: () {
+            _AddUserPopup(context);
+            pro.cleartextfield();
+          },
+          child: Icon(
+            CupertinoIcons.plus,
+            color: AppColors.white,
+          ),
+          backgroundColor: AppColors.buttonblack,
+        );
+      }),
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: screenwidth / 25),
         child: SingleChildScrollView(
@@ -78,8 +77,8 @@ class HomePage extends StatelessWidget {
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
-                                borderSide:
-                                BorderSide(color: AppColors.textblue, width: 1),
+                                borderSide: BorderSide(
+                                    color: AppColors.textblue, width: 1),
                               ),
                             ),
                             style: TextStyle(color: AppColors.textblack),
@@ -116,17 +115,24 @@ class HomePage extends StatelessWidget {
               Consumer<MainProvider>(
                 builder: (context, pro, child) {
                   return ListView.builder(
-                    itemCount: pro.filteredUsersList.length + (pro.isFetching ? 1 : 0), // +1 for loading indicator if isLoading is true
+                    itemCount: pro.filteredUsersList.length + 1,
                     padding: EdgeInsets.symmetric(vertical: 4.0),
                     physics: NeverScrollableScrollPhysics(),
                     shrinkWrap: true,
                     itemBuilder: (context, index) {
-                      if (index == pro.filteredUsersList.length && pro.isFetching) {
-                        // Show loading indicator when reaching the end of the list and data is being fetched
-                        return Center(child: CircularProgressIndicator());
+
+                      if (index == pro.filteredUsersList.length) {
+                        return Center(
+                          child: ElevatedButton(
+                            onPressed: pro.isFetching ? null : pro.fetchUsers,
+                            child: pro.isFetching
+                                ? CircularProgressIndicator()
+                                : Text("Load More"),
+                          ),
+                        );
                       }
 
-                      // Regular list item rendering
+                      // Display each user item
                       User item = pro.filteredUsersList[index];
                       return Padding(
                         padding: EdgeInsets.symmetric(vertical: 4.0),
@@ -150,7 +156,10 @@ class HomePage extends StatelessWidget {
                             ),
                             title: Text(item.name),
                             subtitle: Text(item.number),
-                            trailing: Text("Age: ${item.age}", style: TextStyle(fontSize: 14)),
+                            trailing: Text(
+                              "Age: ${item.age}",
+                              style: TextStyle(fontSize: 14),
+                            ),
                           ),
                         ),
                       );
@@ -158,7 +167,9 @@ class HomePage extends StatelessWidget {
                   );
                 },
               ),
-              SizedBox(height: screenheight/10,)
+              SizedBox(
+                height: screenheight / 10,
+              )
             ],
           ),
         ),
@@ -166,7 +177,6 @@ class HomePage extends StatelessWidget {
     );
   }
 }
-
 
 void _AddUserPopup(BuildContext context) {
   final screenWidth = MediaQuery.of(context).size.width;
@@ -179,116 +189,110 @@ void _AddUserPopup(BuildContext context) {
         child: Container(
           width: screenWidth * 0.8,
           padding: EdgeInsets.all(screenWidth * 0.05),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               lefttitle("Add A New User"),
-
               SizedBox(height: screenWidth * 0.05),
-
-
-
-
-
-            SizedBox(height: screenWidth * 0.05),
-                Consumer<MainProvider>(
-                  builder: (context,pro,child) {
-                    return Column(
+              SizedBox(height: screenWidth * 0.05),
+              Consumer<MainProvider>(builder: (context, pro, child) {
+                return Column(
+                  children: [
+                    _AddUserTextField(
+                      labelText: "Name",
+                      context: context,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter a name';
+                        }
+                        return null;
+                      },
+                      controller: pro.nameController,
+                    ),
+                    SizedBox(height: screenWidth * 0.03),
+                    _AddUserTextField(
+                      labelText: "Age",
+                      keyboardType: TextInputType.number,
+                      context: context,
+                      inputFormatter: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(2),
+                      ],
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter age';
+                        }
+                        if (value.length != 2) {
+                          return 'Age must be a 2-digit number';
+                        }
+                        return null;
+                      },
+                      controller: pro.ageController,
+                    ),
+                    SizedBox(height: screenWidth * 0.03),
+                    _AddUserTextField(
+                      labelText: "Phone Number",
+                      keyboardType: TextInputType.phone,
+                      context: context,
+                      inputFormatter: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(10),
+                      ],
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter phone number';
+                        }
+                        if (value.length != 10) {
+                          return 'Phone number must be 10 digits';
+                        }
+                        return null;
+                      },
+                      controller: pro.numberController,
+                    ),
+                    SizedBox(height: screenWidth * 0.05),
+                    Row(
                       children: [
-                        _AddUserTextField(
-                          labelText: "Name",
-                          context: context,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter a name';
-                            }
-                            return null;
-                          }, controller: pro.nameController,
+                        Expanded(
+                          child: _Buttons(
+                            context,
+                            label: "Cancel",
+                            color: Colors.grey[300]!,
+                            textColor: Colors.grey,
+                            onPressed: () => Navigator.pop(context),
+                          ),
                         ),
-                        SizedBox(height: screenWidth * 0.03),
-                        _AddUserTextField(
-                          labelText: "Age",
-                          keyboardType: TextInputType.number,
-                          context: context,
-                          inputFormatter: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            LengthLimitingTextInputFormatter(2),
-                          ],
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter age';
-                            }
-                            if (value.length != 2) {
-                              return 'Age must be a 2-digit number';
-                            }
-                            return null;
-                          }, controller: pro.ageController,
-                        ),
-                        SizedBox(height: screenWidth * 0.03),
-                        _AddUserTextField(
-                          labelText: "Phone Number",
-                          keyboardType: TextInputType.phone,
-                          context: context,
-                          inputFormatter: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            LengthLimitingTextInputFormatter(10),
-                          ],
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter phone number';
-                            }
-                            if (value.length != 10) {
-                              return 'Phone number must be 10 digits';
-                            }
-                            return null;
-                          }, controller: pro.numberController,
-                        ),
-                        SizedBox(height: screenWidth * 0.05),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _Buttons(
-                                context,
-                                label: "Cancel",
-                                color: Colors.grey[300]!,
-                                textColor: Colors.grey,
-                                onPressed: () => Navigator.pop(context),
-                              ),
-                            ),
-                            SizedBox(width: screenWidth * 0.02),
-                            Expanded(
-                              child: _Buttons(
-                                context,
-                                label: "Save",
-                                color: Colors.blue,
-                                textColor: Colors.white,
-                                onPressed: () {
-                                  if (pro.nameController.text.isNotEmpty &&
-                                      pro.ageController.text.isNotEmpty &&
-                                      pro.numberController.text.isNotEmpty
-                                      ) {
-                                    pro.addUser(context);
-                                    Navigator.pop(context);
-                                    pro.fetchUsers();
-
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text("Please fill all fields and select an image"),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                  }
-                                },
-                              ),
-                            ),
-                          ],
+                        SizedBox(width: screenWidth * 0.02),
+                        Expanded(
+                          child: _Buttons(
+                            context,
+                            label: "Save",
+                            color: Colors.blue,
+                            textColor: Colors.white,
+                            onPressed: () {
+                              if (pro.nameController.text.isNotEmpty &&
+                                  pro.ageController.text.isNotEmpty &&
+                                  pro.numberController.text.isNotEmpty) {
+                                pro.addUser(context);
+                                Navigator.pop(context);
+                                pro.fetchUsers();
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                        "Please fill all fields and select an image"),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            },
+                          ),
                         ),
                       ],
-                    );
-                  }
-                ),
-
+                    ),
+                  ],
+                );
+              }),
             ],
           ),
         ),
@@ -358,77 +362,11 @@ Widget _Buttons(BuildContext context,
   );
 }
 
-// void _sortingPopup(BuildContext context) {
-//   final screenWidth = MediaQuery.of(context).size.width;
-//
-//   // Add a variable to track the selected sorting option
-//   int? selectedOption = 0; // 0 for All, 1 for Younger, 2 for Older
-//
-//   showDialog(
-//     context: context,
-//     builder: (BuildContext context) {
-//       return StatefulBuilder(
-//         builder: (context, setState) {
-//           return Dialog(
-//             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-//             child: Container(
-//               width: screenWidth * 0.8,
-//               padding: EdgeInsets.all(screenWidth * 0.05),
-//               child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-//                 mainAxisSize: MainAxisSize.min,
-//                 children: [
-//                   lefttitle("Sort"),
-//                   RadioListTile<int>(
-//                     fillColor: WidgetStatePropertyAll(AppColors.textblue),
-//                     title: Text("All"),
-//                     value: 0,
-//                     groupValue: selectedOption,
-//                     onChanged: (int? value) {
-//                       setState(() {
-//                         selectedOption = value;
-//                       });
-//                     },
-//                   ),
-//                   RadioListTile<int>(
-//                     fillColor: WidgetStatePropertyAll(AppColors.textblue),
-//
-//                     title: Text("Age: Younger"),
-//                     value: 1,
-//                     groupValue: selectedOption,
-//                     onChanged: (int? value) {
-//                       setState(() {
-//                         selectedOption = value;
-//                       });
-//                     },
-//                   ),
-//                   RadioListTile<int>(
-//                     fillColor: WidgetStatePropertyAll(AppColors.textblue),
-//
-//                     title: Text("Age: Older"),
-//                     value: 2,
-//                     groupValue: selectedOption,
-//                     onChanged: (int? value) {
-//                       setState(() {
-//                         selectedOption = value;
-//                       });
-//                     },
-//                   ),
-//                   SizedBox(height: 10),
-//                   Center(child: _Buttons(context,label: "Apply", color: AppColors.textblue, textColor: AppColors.white, onPressed: () {  }))
-//                 ],
-//               ),
-//             ),
-//           );
-//         },
-//       );
-//     },
-//   );
-// }
 void _sortingPopup(BuildContext context) {
   final screenWidth = MediaQuery.of(context).size.width;
 
   // Add a variable to track the selected sorting option
-  int? selectedOption = 0; // 0 for All, 1 for Younger, 2 for Older
+  // int? selectedOption = 0; // 0 for All, 1 for Younger, 2 for Older
 
   showDialog(
     context: context,
@@ -436,65 +374,74 @@ void _sortingPopup(BuildContext context) {
       return StatefulBuilder(
         builder: (context, setState) {
           return Dialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            child: Consumer<MainProvider>(
-              builder: (context,prov,child) {
-                return Container(
-                  width: screenWidth * 0.8,
-                  padding: EdgeInsets.all(screenWidth * 0.05),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      lefttitle("Sort"),
-                      RadioListTile<int>(
-                        fillColor: WidgetStatePropertyAll(AppColors.textblue),
-                        title: Text("All"),
-                        value: 0,
-                        groupValue: selectedOption,
-                        onChanged: (int? value) {
-                          setState(() {
-                            selectedOption = value;
-                          });
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: Consumer<MainProvider>(builder: (context, prov, child) {
+              int? tempOption = prov.selectedOption;
+              return Container(
+                width: screenWidth * 0.8,
+                padding: EdgeInsets.all(screenWidth * 0.05),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    lefttitle("Sort"),
+                    RadioListTile<int>(
+                      fillColor: WidgetStatePropertyAll(AppColors.textblue),
+                      title: Text("All"),
+                      value: 0,
+                      groupValue: tempOption,
+                      onChanged: (int? value) {
+                        setState(() {
+                          prov.selectedOption = value;
+                        });
+                      },
+                    ),
+                    RadioListTile<int>(
+                      fillColor: WidgetStatePropertyAll(AppColors.textblue),
+                      title: Text("Age: Younger"),
+                      value: 1,
+                      groupValue: tempOption,
+                      onChanged: (int? value) {
+                        setState(() {
+                          prov.selectedOption = value;
+                        });
+                      },
+                    ),
+                    RadioListTile<int>(
+                      fillColor: WidgetStatePropertyAll(AppColors.textblue),
+                      title: Text("Age: Older"),
+                      value: 2,
+                      groupValue: tempOption,
+                      onChanged: (int? value) {
+                        setState(() {
+                          prov.selectedOption = value;
+                        });
+                      },
+                    ),
+                    SizedBox(height: 10),
+                    Center(
+                      child: _Buttons(
+                        context,
+                        label: "Apply",
+                        color: AppColors.textblue,
+                        textColor: AppColors.white,
+                        onPressed: () {
+                          // Get the current search query and selected sorting option
+                          String currentQuery = prov.nameController.text; // Or use a dedicated search field controller
+                          prov.filterUsers(currentQuery);  // Apply both search and sort
+                          Navigator.pop(context);  // Close the dialog
                         },
                       ),
-                      RadioListTile<int>(
-                        fillColor: WidgetStatePropertyAll(AppColors.textblue),
-                        title: Text("Age: Younger"),
-                        value: 1,
-                        groupValue: selectedOption,
-                        onChanged: (int? value) {
-                          setState(() {
-                            selectedOption = value;
-                          });
-                        },
-                      ),
-                      RadioListTile<int>(
-                        fillColor: WidgetStatePropertyAll(AppColors.textblue),
-                        title: Text("Age: Older"),
-                        value: 2,
-                        groupValue: selectedOption,
-                        onChanged: (int? value) {
-                          setState(() {
-                            selectedOption = value;
-                          });
-                        },
-                      ),
-                      SizedBox(height: 10),
-                      Center(child: _Buttons(context, label: "Apply", color: AppColors.textblue, textColor: AppColors.white, onPressed: () {
-                        prov.sortUsersByAge(selectedOption);
-                        Navigator.pop(context);
-                      }))
-                    ],
-                  ),
-                );
-              }
-            ),
+                    )
+                  ],
+                ),
+              );
+            }),
           );
         },
       );
     },
   );
 }
-
-
 
