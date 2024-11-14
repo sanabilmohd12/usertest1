@@ -25,16 +25,21 @@ class HomePage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.bggrey,
-      floatingActionButton: FloatingActionButton(
-        shape: CircleBorder(),
-        onPressed: () {
-          _AddUserPopup(context);
-        },
-        child: Icon(
-          CupertinoIcons.plus,
-          color: AppColors.white,
-        ),
-        backgroundColor: AppColors.buttonblack,
+      floatingActionButton: Consumer<MainProvider>(
+        builder: (context,pro,child) {
+          return FloatingActionButton(
+            shape: CircleBorder(),
+            onPressed: () {
+              _AddUserPopup(context);
+              pro.cleartextfield();
+            },
+            child: Icon(
+              CupertinoIcons.plus,
+              color: AppColors.white,
+            ),
+            backgroundColor: AppColors.buttonblack,
+          );
+        }
       ),
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: screenwidth / 25),
@@ -110,14 +115,19 @@ class HomePage extends StatelessWidget {
               lefttitle("User Lists"),
               Consumer<MainProvider>(
                 builder: (context, pro, child) {
-                  // Show filtered users list
                   return ListView.builder(
-                    itemCount: pro.filteredUsersList.length,
+                    itemCount: pro.filteredUsersList.length + (pro.isFetching ? 1 : 0), // +1 for loading indicator if isLoading is true
                     padding: EdgeInsets.symmetric(vertical: 4.0),
                     physics: NeverScrollableScrollPhysics(),
                     shrinkWrap: true,
                     itemBuilder: (context, index) {
-                      User user = pro.filteredUsersList[index];
+                      if (index == pro.filteredUsersList.length && pro.isFetching) {
+                        // Show loading indicator when reaching the end of the list and data is being fetched
+                        return Center(child: CircularProgressIndicator());
+                      }
+
+                      // Regular list item rendering
+                      User item = pro.filteredUsersList[index];
                       return Padding(
                         padding: EdgeInsets.symmetric(vertical: 4.0),
                         child: Material(
@@ -132,12 +142,15 @@ class HomePage extends StatelessWidget {
                             tileColor: AppColors.white,
                             leading: CircleAvatar(
                               backgroundColor: AppColors.textblue,
-                              child: Text(user.name[0].toUpperCase(),style: TextStyle(color: Colors.white),),
+                              child: Text(
+                                item.name[0].toUpperCase(),
+                                style: TextStyle(color: Colors.white),
+                              ),
                               radius: 40,
                             ),
-                            title: Text(user.name),
-                            subtitle: Text(user.number),
-                            trailing: Text("Age: ${user.age}",style: TextStyle(fontSize: 14),),
+                            title: Text(item.name),
+                            subtitle: Text(item.number),
+                            trailing: Text("Age: ${item.age}", style: TextStyle(fontSize: 14)),
                           ),
                         ),
                       );
@@ -156,7 +169,6 @@ class HomePage extends StatelessWidget {
 
 
 void _AddUserPopup(BuildContext context) {
-  final _formKey = GlobalKey<FormState>();
   final screenWidth = MediaQuery.of(context).size.width;
 
   showDialog(
@@ -346,7 +358,72 @@ Widget _Buttons(BuildContext context,
   );
 }
 
-
+// void _sortingPopup(BuildContext context) {
+//   final screenWidth = MediaQuery.of(context).size.width;
+//
+//   // Add a variable to track the selected sorting option
+//   int? selectedOption = 0; // 0 for All, 1 for Younger, 2 for Older
+//
+//   showDialog(
+//     context: context,
+//     builder: (BuildContext context) {
+//       return StatefulBuilder(
+//         builder: (context, setState) {
+//           return Dialog(
+//             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+//             child: Container(
+//               width: screenWidth * 0.8,
+//               padding: EdgeInsets.all(screenWidth * 0.05),
+//               child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+//                 mainAxisSize: MainAxisSize.min,
+//                 children: [
+//                   lefttitle("Sort"),
+//                   RadioListTile<int>(
+//                     fillColor: WidgetStatePropertyAll(AppColors.textblue),
+//                     title: Text("All"),
+//                     value: 0,
+//                     groupValue: selectedOption,
+//                     onChanged: (int? value) {
+//                       setState(() {
+//                         selectedOption = value;
+//                       });
+//                     },
+//                   ),
+//                   RadioListTile<int>(
+//                     fillColor: WidgetStatePropertyAll(AppColors.textblue),
+//
+//                     title: Text("Age: Younger"),
+//                     value: 1,
+//                     groupValue: selectedOption,
+//                     onChanged: (int? value) {
+//                       setState(() {
+//                         selectedOption = value;
+//                       });
+//                     },
+//                   ),
+//                   RadioListTile<int>(
+//                     fillColor: WidgetStatePropertyAll(AppColors.textblue),
+//
+//                     title: Text("Age: Older"),
+//                     value: 2,
+//                     groupValue: selectedOption,
+//                     onChanged: (int? value) {
+//                       setState(() {
+//                         selectedOption = value;
+//                       });
+//                     },
+//                   ),
+//                   SizedBox(height: 10),
+//                   Center(child: _Buttons(context,label: "Apply", color: AppColors.textblue, textColor: AppColors.white, onPressed: () {  }))
+//                 ],
+//               ),
+//             ),
+//           );
+//         },
+//       );
+//     },
+//   );
+// }
 void _sortingPopup(BuildContext context) {
   final screenWidth = MediaQuery.of(context).size.width;
 
@@ -360,52 +437,57 @@ void _sortingPopup(BuildContext context) {
         builder: (context, setState) {
           return Dialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            child: Container(
-              width: screenWidth * 0.8,
-              padding: EdgeInsets.all(screenWidth * 0.05),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  lefttitle("Sort"),
-                  RadioListTile<int>(
-                    fillColor: WidgetStatePropertyAll(AppColors.textblue),
-                    title: Text("All"),
-                    value: 0,
-                    groupValue: selectedOption,
-                    onChanged: (int? value) {
-                      setState(() {
-                        selectedOption = value;
-                      });
-                    },
+            child: Consumer<MainProvider>(
+              builder: (context,prov,child) {
+                return Container(
+                  width: screenWidth * 0.8,
+                  padding: EdgeInsets.all(screenWidth * 0.05),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      lefttitle("Sort"),
+                      RadioListTile<int>(
+                        fillColor: WidgetStatePropertyAll(AppColors.textblue),
+                        title: Text("All"),
+                        value: 0,
+                        groupValue: selectedOption,
+                        onChanged: (int? value) {
+                          setState(() {
+                            selectedOption = value;
+                          });
+                        },
+                      ),
+                      RadioListTile<int>(
+                        fillColor: WidgetStatePropertyAll(AppColors.textblue),
+                        title: Text("Age: Younger"),
+                        value: 1,
+                        groupValue: selectedOption,
+                        onChanged: (int? value) {
+                          setState(() {
+                            selectedOption = value;
+                          });
+                        },
+                      ),
+                      RadioListTile<int>(
+                        fillColor: WidgetStatePropertyAll(AppColors.textblue),
+                        title: Text("Age: Older"),
+                        value: 2,
+                        groupValue: selectedOption,
+                        onChanged: (int? value) {
+                          setState(() {
+                            selectedOption = value;
+                          });
+                        },
+                      ),
+                      SizedBox(height: 10),
+                      Center(child: _Buttons(context, label: "Apply", color: AppColors.textblue, textColor: AppColors.white, onPressed: () {
+                        prov.sortUsersByAge(selectedOption);
+                        Navigator.pop(context);
+                      }))
+                    ],
                   ),
-                  RadioListTile<int>(
-                    fillColor: WidgetStatePropertyAll(AppColors.textblue),
-
-                    title: Text("Age: Younger"),
-                    value: 1,
-                    groupValue: selectedOption,
-                    onChanged: (int? value) {
-                      setState(() {
-                        selectedOption = value;
-                      });
-                    },
-                  ),
-                  RadioListTile<int>(
-                    fillColor: WidgetStatePropertyAll(AppColors.textblue),
-
-                    title: Text("Age: Older"),
-                    value: 2,
-                    groupValue: selectedOption,
-                    onChanged: (int? value) {
-                      setState(() {
-                        selectedOption = value;
-                      });
-                    },
-                  ),
-                  SizedBox(height: 10),
-                  Center(child: _Buttons(context,label: "Apply", color: AppColors.textblue, textColor: AppColors.white, onPressed: () {  }))
-                ],
-              ),
+                );
+              }
             ),
           );
         },
@@ -413,4 +495,6 @@ void _sortingPopup(BuildContext context) {
     },
   );
 }
+
+
 

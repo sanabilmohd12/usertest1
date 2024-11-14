@@ -5,8 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:image_cropper/image_cropper.dart';
-import 'package:image_picker/image_picker.dart';
+
 
 import '../model/models.dart';
 
@@ -35,8 +34,7 @@ class MainProvider extends ChangeNotifier {
     });
   }
 
-  String userImageUrl = '';
-  File? userImageFile;
+
 
 
   TextEditingController nameController = TextEditingController();
@@ -79,47 +77,81 @@ class MainProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+ void cleartextfield (){
+    nameController.clear();
+    ageController.clear();
+    numberController.clear();
+ }
+
+
   List<User> usersList = [];
+  List<User> filteredUsersList = [];
+  DocumentSnapshot? lastDocument;
+
+  bool isFetching = false;
 
   Future<void> fetchUsers() async {
+    if (isFetching) return;
+    isFetching = true;
     try {
-      final value = await FirebaseFirestore.instance.collection("USERS").get();
+      QuerySnapshot querySnapshot;
+      if (lastDocument == null) {
+        querySnapshot = await FirebaseFirestore.instance.collection("USERS").limit(10).get();
+      } else {
+        querySnapshot = await FirebaseFirestore.instance
+            .collection("USERS")
+            .startAfterDocument(lastDocument!)
+            .limit(10)
+            .get();
+      }
 
-      if (value.docs.isNotEmpty) {
-        usersList.clear();
-        for (var element in value.docs) {
+      if (querySnapshot.docs.isNotEmpty) {
+        for (var element in querySnapshot.docs) {
           usersList.add(User.fromFirestore(element));
         }
+        lastDocument = querySnapshot.docs.last;
         filteredUsersList = List.from(usersList);
       }
       notifyListeners();
     } catch (e) {
       print("Error in fetchUsers: $e");
+    } finally {
+      isFetching = false; // Allow fetching again
     }
   }
 
-
-  List<User> filteredUsersList = [];
-
   Future<void> filterUsers(String query) async {
     if (query.isEmpty) {
-      // If the query is empty, show all users
       filteredUsersList = List.from(usersList);
     } else {
-      // Filter based on query
       filteredUsersList = usersList
           .where((user) =>
       user.name.toLowerCase().contains(query.toLowerCase()) ||
           user.number.toLowerCase().contains(query.toLowerCase()))
           .toList();
     }
-    print("Filtered users: ${filteredUsersList.length}"); // Debugging
-    notifyListeners(); // Notify listeners to update UI
+    print("Filtered users: ${filteredUsersList.length}");
+    notifyListeners();
   }
 
 
+  void sortUsersByAge(int? selectedOption) {
+    switch (selectedOption) {
+      case 1: // Younger (below 60)
+        filteredUsersList = usersList.where((user) => int.parse(user.age) < 60).toList();
+        break;
+      case 2: // Older (60 and above)
+        filteredUsersList = usersList.where((user) => int.parse(user.age) >= 60).toList();
+        break;
+      default: // All
+        filteredUsersList = List.from(usersList);
+        break;
+    }
+    print("Filtered users after sorting: ${filteredUsersList.length}");
+    notifyListeners();
+  }
+
 
 }
-
 
 
