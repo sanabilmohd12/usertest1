@@ -1,11 +1,20 @@
+import 'dart:collection';
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../model/models.dart';
+
+
 class MainProvider extends ChangeNotifier {
+
+  Reference ref = FirebaseStorage.instance.ref("IMAGEURL");
+  FirebaseFirestore db = FirebaseFirestore.instance;
 
 
 
@@ -22,81 +31,95 @@ class MainProvider extends ChangeNotifier {
     Future.delayed(const Duration(seconds: 4), () {
       currentHintIndex = (currentHintIndex + 1) % hintTexts.length;
       notifyListeners();
-      _startHintTextRotation(); // Continue the rotation
+      _startHintTextRotation();
     });
   }
 
   String userImageUrl = '';
   File? userImageFile;
 
-  Future<void> pickUserImageFromGallery() async {
-    final imagePicker = ImagePicker();
-    final pickedImage = await imagePicker.pickImage(source: ImageSource.gallery);
 
-    if (pickedImage != null) {
-      await cropUserImage(pickedImage.path);
+  TextEditingController nameController = TextEditingController();
+  TextEditingController ageController = TextEditingController();
+  TextEditingController numberController = TextEditingController();
+
+  Future<void> addUser(BuildContext context) async {
+    String id = DateTime.now().millisecondsSinceEpoch.toString();
+    HashMap<String, dynamic> map = HashMap();
+    map["USER_ID"] = id;
+
+    map["NAME"] = nameController.text;
+    map["AGE"] = ageController.text;
+    map["NUMBER"] = numberController.text;
+
+    try {
+      await FirebaseFirestore.instance.collection("USERS").doc(id).set(map);
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Successfully Added"),
+              duration: Duration(seconds: 2),
+              backgroundColor: Color(0xda4b4b4b),
+            ),
+          );
+        }
+      });
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Failed to add user. Please try again."),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+    notifyListeners();
+  }
+
+  List<User> usersList = [];
+
+  Future<void> fetchUsers() async {
+    try {
+      final value = await FirebaseFirestore.instance.collection("USERS").get();
+
+      if (value.docs.isNotEmpty) {
+        usersList.clear();
+        for (var element in value.docs) {
+          usersList.add(User.fromFirestore(element));
+        }
+        filteredUsersList = List.from(usersList);
+      }
+      notifyListeners();
+    } catch (e) {
+      print("Error in fetchUsers: $e");
+    }
+  }
+
+
+  List<User> filteredUsersList = [];
+
+  Future<void> filterUsers(String query) async {
+    if (query.isEmpty) {
+      // If the query is empty, show all users
+      filteredUsersList = List.from(usersList);
     } else {
-      print('No image selected.');
+      // Filter based on query
+      filteredUsersList = usersList
+          .where((user) =>
+      user.name.toLowerCase().contains(query.toLowerCase()) ||
+          user.number.toLowerCase().contains(query.toLowerCase()))
+          .toList();
     }
+    print("Filtered users: ${filteredUsersList.length}"); // Debugging
+    notifyListeners(); // Notify listeners to update UI
   }
-
-  Future<void> pickUserImageFromCamera() async {
-    final imagePicker = ImagePicker();
-    final pickedImage = await imagePicker.pickImage(source: ImageSource.camera);
-
-    if (pickedImage != null) {
-      await cropUserImage(pickedImage.path);
-    } else {
-      print('No image selected.');
-    }
-  }
-
-  Future<void> cropUserImage(String path) async {
-    final croppedFile = await ImageCropper().cropImage(
-      sourcePath: path,
-      aspectRatioPresets: Platform.isAndroid
-          ? [
-        CropAspectRatioPreset.square,
-        CropAspectRatioPreset.ratio3x2,
-        CropAspectRatioPreset.original,
-        CropAspectRatioPreset.ratio4x3,
-        CropAspectRatioPreset.ratio16x9,
-      ]
-          : [
-        CropAspectRatioPreset.original,
-        CropAspectRatioPreset.square,
-        CropAspectRatioPreset.ratio3x2,
-        CropAspectRatioPreset.ratio4x3,
-        CropAspectRatioPreset.ratio5x3,
-        CropAspectRatioPreset.ratio5x4,
-        CropAspectRatioPreset.ratio7x5,
-        CropAspectRatioPreset.ratio16x9,
-      ],
-      uiSettings: [
-        AndroidUiSettings(
-          toolbarTitle: 'Cropper',
-          toolbarColor: Colors.white,
-          toolbarWidgetColor: Colors.black,
-          initAspectRatio: CropAspectRatioPreset.original,
-          lockAspectRatio: false,
-        ),
-        IOSUiSettings(
-          title: 'Cropper',
-        ),
-      ],
-    );
-
-    if (croppedFile != null) {
-      userImageFile = File(croppedFile.path);
-      notifyListeners(); // Update the UI only after setting the image
-    }
-  }
-
-
-// Displaying the picked image in the UI
-
-
 
 
 
 }
+
+
+

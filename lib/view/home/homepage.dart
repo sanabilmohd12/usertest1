@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:testcase1/utils/constants/widgets.dart';
 
+import '../../model/models.dart';
 import '../../utils/constants/colors.dart';
 import '../../viewmodel/mainprovider.dart';
 
@@ -14,6 +15,13 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenheight = MediaQuery.of(context).size.height;
     final screenwidth = MediaQuery.of(context).size.width;
+
+    MainProvider mainprovider =
+    Provider.of<MainProvider>(context, listen: false);
+
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      mainprovider.fetchUsers();
+    });
 
     return Scaffold(
       backgroundColor: AppColors.bggrey,
@@ -41,7 +49,7 @@ class HomePage extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Consumer<MainProvider>(
-                        builder: (context,pro,child) {
+                        builder: (context, pro, child) {
                           return TextFormField(
                             decoration: InputDecoration(
                               prefixIcon: Icon(Icons.search_rounded),
@@ -66,19 +74,22 @@ class HomePage extends StatelessWidget {
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
                                 borderSide:
-                                    BorderSide(color: AppColors.textblue, width: 1),
+                                BorderSide(color: AppColors.textblue, width: 1),
                               ),
                             ),
                             style: TextStyle(color: AppColors.textblack),
+                            onChanged: (value) {
+                              // Filter users when the search text changes
+                              pro.filterUsers(value);
+                            },
                           );
-                        }
+                        },
                       ),
                     ),
                     Padding(
                       padding: EdgeInsets.only(left: 1.0),
-                      child: GestureDetector(
+                      child: InkWell(
                         onTap: () {
-
                           _sortingPopup(context);
                         },
                         child: Container(
@@ -97,35 +108,44 @@ class HomePage extends StatelessWidget {
                 ),
               ),
               lefttitle("User Lists"),
-              ListView.builder(
-                itemCount: 5,
-                padding: EdgeInsets.symmetric(vertical: 4.0),
-                physics: NeverScrollableScrollPhysics(),
-                shrinkWrap: true,
-                itemBuilder: (context, index) {
-                  return Padding(
+              Consumer<MainProvider>(
+                builder: (context, pro, child) {
+                  // Show filtered users list
+                  return ListView.builder(
+                    itemCount: pro.filteredUsersList.length,
                     padding: EdgeInsets.symmetric(vertical: 4.0),
-                    child: Material(
-                      elevation: 4,
-                      borderRadius: BorderRadius.circular(8),
-                      shadowColor: Colors.black.withOpacity(0.1),
-                      child: ListTile(
-                        contentPadding: EdgeInsets.all(8),
-                        shape: RoundedRectangleBorder(
+                    physics: NeverScrollableScrollPhysics(),
+                    shrinkWrap: true,
+                    itemBuilder: (context, index) {
+                      User user = pro.filteredUsersList[index];
+                      return Padding(
+                        padding: EdgeInsets.symmetric(vertical: 4.0),
+                        child: Material(
+                          elevation: 4,
                           borderRadius: BorderRadius.circular(8),
+                          shadowColor: Colors.black.withOpacity(0.1),
+                          child: ListTile(
+                            contentPadding: EdgeInsets.all(8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            tileColor: AppColors.white,
+                            leading: CircleAvatar(
+                              backgroundColor: AppColors.textblue,
+                              child: Text(user.name[0].toUpperCase(),style: TextStyle(color: Colors.white),),
+                              radius: 40,
+                            ),
+                            title: Text(user.name),
+                            subtitle: Text(user.number),
+                            trailing: Text("Age: ${user.age}",style: TextStyle(fontSize: 14),),
+                          ),
                         ),
-                        tileColor: AppColors.white,
-                        leading: CircleAvatar(
-                          backgroundImage: AssetImage("assets/otp.png"),
-                          radius: 40,
-                        ),
-                        title: Text("Name"),
-                        subtitle: Text("Age: 33"),
-                      ),
-                    ),
+                      );
+                    },
                   );
                 },
               ),
+              SizedBox(height: screenheight/10,)
             ],
           ),
         ),
@@ -133,6 +153,7 @@ class HomePage extends StatelessWidget {
     );
   }
 }
+
 
 void _AddUserPopup(BuildContext context) {
   final _formKey = GlobalKey<FormState>();
@@ -155,125 +176,107 @@ void _AddUserPopup(BuildContext context) {
 
 
 
-            Consumer<MainProvider>(
-              builder: (context, pro, child) {
-                return GestureDetector(
-                  onTap: () {
-                    showBottomSheet(context);
-                  },
-                  child: Center(
-                    child: Container(
-                      width: screenWidth * 0.2,
-                      height: screenWidth * 0.2,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.grey[200],
-                      ),
-                      child: ClipOval(
-                        child: pro.userImageFile != null
-                            ? Image.file(
-                          pro.userImageFile!,
-                          fit: BoxFit.cover,
-                          width: screenWidth * 0.2,
-                          height: screenWidth * 0.2,
-                        )
-                            : Image.asset(
-                          'assets/addUser.png',
-                          fit: BoxFit.cover,
-                          width: screenWidth * 0.2,
-                          height: screenWidth * 0.2,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
+
 
             SizedBox(height: screenWidth * 0.05),
-              Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    _AddUserTextField(
-                      labelText: "Name",
-                      context: context,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a name';
-                        }
-                        return null;
-                      },
-                    ),
-                    SizedBox(height: screenWidth * 0.03),
-                    _AddUserTextField(
-                      labelText: "Age",
-                      keyboardType: TextInputType.number,
-                      context: context,
-                      inputFormatter: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(2),
-                      ],
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter age';
-                        }
-                        if (value.length != 2) {
-                          return 'Age must be a 2-digit number';
-                        }
-                        return null;
-                      },
-                    ),
-                    SizedBox(height: screenWidth * 0.03),
-                    _AddUserTextField(
-                      labelText: "Phone Number",
-                      keyboardType: TextInputType.phone,
-                      context: context,
-                      inputFormatter: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(10),
-                      ],
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter phone number';
-                        }
-                        if (value.length != 10) {
-                          return 'Phone number must be 10 digits';
-                        }
-                        return null;
-                      },
-                    ),
-                    SizedBox(height: screenWidth * 0.05),
-                    Row(
+                Consumer<MainProvider>(
+                  builder: (context,pro,child) {
+                    return Column(
                       children: [
-                        Expanded(
-                          child: _Buttons(
-                            context,
-                            label: "Cancel",
-                            color: Colors.grey[300]!,
-                            textColor: Colors.grey,
-                            onPressed: () => Navigator.pop(context),
-                          ),
+                        _AddUserTextField(
+                          labelText: "Name",
+                          context: context,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter a name';
+                            }
+                            return null;
+                          }, controller: pro.nameController,
                         ),
-                        SizedBox(width: screenWidth * 0.02),
-                        Expanded(
-                          child: _Buttons(
-                            context,
-                            label: "Save",
-                            color: Colors.blue,
-                            textColor: Colors.white,
-                            onPressed: () {
-                              if (_formKey.currentState?.validate() ?? false) {
-                                Navigator.pop(context);
-                              }
-                            },
-                          ),
+                        SizedBox(height: screenWidth * 0.03),
+                        _AddUserTextField(
+                          labelText: "Age",
+                          keyboardType: TextInputType.number,
+                          context: context,
+                          inputFormatter: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            LengthLimitingTextInputFormatter(2),
+                          ],
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter age';
+                            }
+                            if (value.length != 2) {
+                              return 'Age must be a 2-digit number';
+                            }
+                            return null;
+                          }, controller: pro.ageController,
+                        ),
+                        SizedBox(height: screenWidth * 0.03),
+                        _AddUserTextField(
+                          labelText: "Phone Number",
+                          keyboardType: TextInputType.phone,
+                          context: context,
+                          inputFormatter: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            LengthLimitingTextInputFormatter(10),
+                          ],
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter phone number';
+                            }
+                            if (value.length != 10) {
+                              return 'Phone number must be 10 digits';
+                            }
+                            return null;
+                          }, controller: pro.numberController,
+                        ),
+                        SizedBox(height: screenWidth * 0.05),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _Buttons(
+                                context,
+                                label: "Cancel",
+                                color: Colors.grey[300]!,
+                                textColor: Colors.grey,
+                                onPressed: () => Navigator.pop(context),
+                              ),
+                            ),
+                            SizedBox(width: screenWidth * 0.02),
+                            Expanded(
+                              child: _Buttons(
+                                context,
+                                label: "Save",
+                                color: Colors.blue,
+                                textColor: Colors.white,
+                                onPressed: () {
+                                  if (pro.nameController.text.isNotEmpty &&
+                                      pro.ageController.text.isNotEmpty &&
+                                      pro.numberController.text.isNotEmpty
+                                      ) {
+                                    pro.addUser(context);
+                                    Navigator.pop(context);
+                                    pro.fetchUsers();
+
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text("Please fill all fields and select an image"),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
                         ),
                       ],
-                    ),
-                  ],
+                    );
+                  }
                 ),
-              ),
+
             ],
           ),
         ),
@@ -284,6 +287,7 @@ void _AddUserPopup(BuildContext context) {
 
 Widget _AddUserTextField({
   required String labelText,
+  required TextEditingController controller,
   TextInputType keyboardType = TextInputType.text,
   required BuildContext context,
   List<TextInputFormatter>? inputFormatter,
@@ -292,6 +296,7 @@ Widget _AddUserTextField({
   final screenWidth = MediaQuery.of(context).size.width;
 
   return TextFormField(
+    controller: controller,
     keyboardType: keyboardType,
     inputFormatters: inputFormatter,
     decoration: InputDecoration(
@@ -341,53 +346,6 @@ Widget _Buttons(BuildContext context,
   );
 }
 
-void showBottomSheet(BuildContext context) {
-  showModalBottomSheet(
-    elevation: 10,
-    backgroundColor: AppColors.white,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.only(
-        topLeft: Radius.circular(10.0),
-        topRight: Radius.circular(10.0),
-      ),
-    ),
-    context: context,
-    builder: (BuildContext bc) {
-      return Consumer<MainProvider>(builder: (context, value, child) {
-        return Container(
-          height: 120,
-          child: Padding(
-            padding: const EdgeInsets.only(left: 20.0),
-            child: Column(
-              children: [
-                InkWell(
-                  onTap: () async {
-                    await value.pickUserImageFromGallery();
-                    Navigator.pop(context);
-                  },
-                  child: ListTile(
-                    leading: Icon(Icons.image, color: AppColors.textblue, size: 25),
-                    title: Text("Gallery", style: TextStyle(color: AppColors.textblue, fontSize: 20)),
-                  ),
-                ),
-                InkWell(
-                  onTap: () async {
-                    await value.pickUserImageFromCamera();
-                    Navigator.pop(context);
-                  },
-                  child: ListTile(
-                    leading: Icon(Icons.camera, color: AppColors.textblue, size: 25),
-                    title: Text("Camera", style: TextStyle(color: AppColors.textblue, fontSize: 20)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      });
-    },
-  );
-}
 
 void _sortingPopup(BuildContext context) {
   final screenWidth = MediaQuery.of(context).size.width;
