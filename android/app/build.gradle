@@ -42,3 +42,8 @@ android {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    implementation 'com.github.yalantis:ucrop:2.2.6'
+    // other dependencies
+}
