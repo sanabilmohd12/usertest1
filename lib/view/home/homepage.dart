@@ -16,8 +16,7 @@ class HomePage extends StatelessWidget {
     final screenheight = MediaQuery.of(context).size.height;
     final screenwidth = MediaQuery.of(context).size.width;
 
-    MainProvider mainprovider =
-        Provider.of<MainProvider>(context, listen: false);
+    MainProvider mainprovider = Provider.of<MainProvider>(context, listen: false);
 
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       mainprovider.fetchUsers();
@@ -83,7 +82,6 @@ class HomePage extends StatelessWidget {
                             ),
                             style: TextStyle(color: AppColors.textblack),
                             onChanged: (value) {
-                              // Filter users when the search text changes
                               pro.filterUsers(value);
                             },
                           );
@@ -120,7 +118,6 @@ class HomePage extends StatelessWidget {
                     physics: NeverScrollableScrollPhysics(),
                     shrinkWrap: true,
                     itemBuilder: (context, index) {
-
                       if (index == pro.filteredUsersList.length) {
                         return Center(
                           child: ElevatedButton(
@@ -132,7 +129,6 @@ class HomePage extends StatelessWidget {
                         );
                       }
 
-                      // Display each user item
                       User item = pro.filteredUsersList[index];
                       return Padding(
                         padding: EdgeInsets.symmetric(vertical: 4.0),
@@ -365,9 +361,6 @@ Widget _Buttons(BuildContext context,
 void _sortingPopup(BuildContext context) {
   final screenWidth = MediaQuery.of(context).size.width;
 
-  // Add a variable to track the selected sorting option
-  // int? selectedOption = 0; // 0 for All, 1 for Younger, 2 for Older
-
   showDialog(
     context: context,
     builder: (BuildContext context) {
@@ -427,10 +420,9 @@ void _sortingPopup(BuildContext context) {
                         color: AppColors.textblue,
                         textColor: AppColors.white,
                         onPressed: () {
-                          // Get the current search query and selected sorting option
-                          String currentQuery = prov.nameController.text; // Or use a dedicated search field controller
-                          prov.filterUsers(currentQuery);  // Apply both search and sort
-                          Navigator.pop(context);  // Close the dialog
+                          String currentQuery = prov.nameController.text;
+                          prov.filterUsers(currentQuery);
+                          Navigator.pop(context);
                         },
                       ),
                     )
@@ -444,4 +436,3 @@ void _sortingPopup(BuildContext context) {
     },
   );
 }
-
