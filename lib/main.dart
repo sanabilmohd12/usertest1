@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:testcase1/service/authprovider.dart';
 import 'package:testcase1/view/auth/LoginPage.dart';
 import 'package:testcase1/view/auth/OTPpage.dart';
 import 'package:testcase1/view/home/homepage.dart';
@@ -28,7 +29,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (context) => MainProvider(),)
+        ChangeNotifierProvider(create: (context) => MainProvider(),),
+        ChangeNotifierProvider(create: (context) => LoginProvider(),),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -37,7 +39,7 @@ class MyApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
           useMaterial3: true,
         ),
-        home: HomePage(),
+        home: LoginPage(),
       ),
     );
   }
